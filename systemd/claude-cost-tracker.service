@@ -1,0 +1,6 @@
+[Unit]
+Description=Aggregate Claude Code session costs into cache
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env bash %h/.claude/cost-tracker.sh
