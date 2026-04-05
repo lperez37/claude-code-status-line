@@ -120,7 +120,7 @@ fi
 if [ -n "$cwd" ]; then
   branch=$(git_branch "$cwd")
   if [ -n "$branch" ]; then
-    line1+=("$(printf "${MAGENTA} %s${RST}" "$branch")")
+    line1+=("$(printf "${MAGENTA}%s${RST}" "$branch")")
   fi
 fi
 
@@ -132,7 +132,7 @@ fi
 
 # Lines changed
 if [ "$lines_added" -gt 0 ] || [ "$lines_removed" -gt 0 ]; then
-  line1+=("$(printf "${GREEN} +%s${RST} ${RED} -%s${RST}" "$lines_added" "$lines_removed")")
+  line1+=("$(printf "${GREEN}+%s${RST} ${RED}-%s${RST}" "$lines_added" "$lines_removed")")
 fi
 
 # Vim mode
