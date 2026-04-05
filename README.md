@@ -2,6 +2,8 @@
 
 A two-line status bar for [Claude Code](https://claude.ai/code) that shows real-time API costs, session context, and aggregate spend at a glance.
 
+Even on a Max x20 subscription where you never see a bill per token, seeing the true API cost of every session is eye-opening. This status line was built to make that invisible spend visible — so you understand what these things actually cost.
+
 ![Claude Code Status Line](bar.png)
 
 ## Features
@@ -35,7 +37,7 @@ A two-line status bar for [Claude Code](https://claude.ai/code) that shows real-
 | Today | `$120` | Calendar day total |
 | Week | `$946` | Rolling 7 days |
 | Month | `$2.9k` | Rolling 30 days. Values over $999 display as `$X.Xk` |
-| Duration | `239m` | Only shown at 60+ min. Yellow 60m, red 120m, red + warning 180m+ |
+| Duration | `3h59m` | Only shown at 60+ min. Yellow 1h+, red 2h+, red + warning 3h+ |
 
 ## Install
 
@@ -91,7 +93,7 @@ bash ~/.claude/cost-tracker.sh
 - Green: < $5 | Yellow: < $15 | Red: $15+
 
 **Duration thresholds** — in `statusline.sh`:
-- 60 min: yellow | 120 min: red | 180 min: red + warning
+- 1h+: yellow | 2h+: red | 3h+: red + warning
 
 **Refresh interval** — edit `OnUnitActiveSec` in `systemd/claude-cost-tracker.timer` (default 15 min)
 

@@ -172,12 +172,20 @@ line2+=("$(printf "${DIM}today${RST} ${PINK}%s${RST} ${DIM}wk${RST} ${PINK}%s${R
 # Duration (only visible at 60+ min, color-coded by severity)
 if [ "$total_duration" -gt 0 ]; then
   total_min=$(( total_duration / 60000 ))
+  # Format as Xh Ym when >= 60 min, otherwise just Xm
+  if [ "$total_min" -ge 60 ]; then
+    dur_h=$(( total_min / 60 ))
+    dur_m=$(( total_min % 60 ))
+    dur_str="${dur_h}h${dur_m}m"
+  else
+    dur_str="${total_min}m"
+  fi
   if [ "$total_min" -ge 180 ]; then
-    line2+=("$(printf "${RED}⚠  %dm${RST}" "$total_min")")
+    line2+=("$(printf "${RED}⚠  %s${RST}" "$dur_str")")
   elif [ "$total_min" -ge 120 ]; then
-    line2+=("$(printf "${RED} %dm${RST}" "$total_min")")
+    line2+=("$(printf "${RED} %s${RST}" "$dur_str")")
   elif [ "$total_min" -ge 60 ]; then
-    line2+=("$(printf "${YELLOW} %dm${RST}" "$total_min")")
+    line2+=("$(printf "${YELLOW} %s${RST}" "$dur_str")")
   fi
 fi
 
