@@ -2,7 +2,7 @@
 Description=Run Claude cost tracker every 15 minutes
 
 [Timer]
-OnBootSec=2min
+OnActiveSec=30s
 OnUnitActiveSec=15min
 Persistent=true
 
