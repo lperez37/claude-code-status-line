@@ -128,10 +128,10 @@ if [ -n "$session_name" ] && [ "$session_name" != "null" ]; then
   line1+=("$(printf "${DIM}\"%s\"${RST}" "$session_name")")
 fi
 
-# True cost (current session, color-coded)
+# Session cost (color-coded)
 cost_col=$(cost_colour "$real_cost")
 cost_str=$(fmt_cost "$real_cost")
-line1+=("$(printf "${DIM}true cost${RST} ${cost_col}%s${RST}" "$cost_str")")
+line1+=("$(printf "${cost_col}%s${RST}" "$cost_str")")
 
 # Context bar (rightmost on line 1)
 if [ -n "$used_pct" ] && [ "$used_pct" != "null" ]; then
