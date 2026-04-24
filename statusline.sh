@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Claude Code Status Line
-# Two-line status bar with session info, cost tracking, and context usage.
+# Single-line status bar with session info, cost tracking, and context usage.
 # Reads JSON from stdin (provided by Claude Code's statusLine feature).
 
 input=$(cat)
@@ -10,27 +10,15 @@ cwd=$(echo "$input"          | jq -r '.workspace.current_dir // .cwd // ""')
 model=$(echo "$input"        | jq -r '.model.display_name // ""')
 used_pct=$(echo "$input"     | jq -r '.context_window.used_percentage // empty')
 real_cost=$(echo "$input"    | jq -r '.cost.total_cost_usd // 0')
-total_duration=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 lines_added=$(echo "$input"  | jq -r '.cost.total_lines_added // 0')
 lines_removed=$(echo "$input"| jq -r '.cost.total_lines_removed // 0')
 vim_mode=$(echo "$input"     | jq -r '.vim.mode // ""')
 session_name=$(echo "$input" | jq -r '.session_name // ""')
 
-# Cost cache (updated by cost-tracker.sh on a timer)
-COST_CACHE="$HOME/.claude/cost-cache.json"
-if [ -f "$COST_CACHE" ]; then
-  cost_today=$(jq -r '.today // 0' "$COST_CACHE")
-  cost_week=$(jq -r '.week // 0' "$COST_CACHE")
-  cost_month=$(jq -r '.month // 0' "$COST_CACHE")
-else
-  cost_today=0; cost_week=0; cost_month=0
-fi
-
 # ── ANSI Colors ─────────────────────────────────────────────────────────────
 RST='\033[0m'; DIM='\033[2m'; BOLD='\033[1m'
 CYAN='\033[36m'; GREEN='\033[32m'; YELLOW='\033[33m'; RED='\033[31m'
 BLUE='\033[34m'; MAGENTA='\033[35m'; WHITE='\033[37m'
-PINK='\033[38;5;213m'
 # 256-color for context bar gradient
 C_LO='\033[38;5;34m'    # green
 C_MID='\033[38;5;214m'  # orange
@@ -96,19 +84,10 @@ fmt_cost() {
   }'
 }
 
-fmt_pink() {
-  awk -v c="$1" 'BEGIN {
-    if (c+0 >= 1000) printf "$%.1fk", c/1000
-    else if (c+0 >= 1) printf "$%.0f", c
-    else printf "$%.2f", c
-  }'
-}
-
 # ── Build segments ──────────────────────────────────────────────────────────
 line1=()
-line2=()
 
-# ── Line 1: location, session info, context ────────────────────────────────
+# ── Line 1: location, session info, cost, context ─────────────────────────
 
 # Directory
 if [ -n "$cwd" ]; then
@@ -149,6 +128,11 @@ if [ -n "$session_name" ] && [ "$session_name" != "null" ]; then
   line1+=("$(printf "${DIM}\"%s\"${RST}" "$session_name")")
 fi
 
+# True cost (current session, color-coded)
+cost_col=$(cost_colour "$real_cost")
+cost_str=$(fmt_cost "$real_cost")
+line1+=("$(printf "${DIM}true cost${RST} ${cost_col}%s${RST}" "$cost_str")")
+
 # Context bar (rightmost on line 1)
 if [ -n "$used_pct" ] && [ "$used_pct" != "null" ]; then
   pct_int=$(printf '%.0f' "$used_pct")
@@ -156,42 +140,8 @@ if [ -n "$used_pct" ] && [ "$used_pct" != "null" ]; then
   line1+=("$(printf "%b ${DIM}%s%%${RST}" "$bar" "$pct_int")")
 fi
 
-# ── Line 2: costs & duration ───────────────────────────────────────────────
-
-# "true cost" label + color-coded session cost
-cost_col=$(cost_colour "$real_cost")
-cost_str=$(fmt_cost "$real_cost")
-line2+=("$(printf "${DIM}true cost${RST} ${cost_col}%s${RST}" "$cost_str")")
-
-# Aggregate costs (today / week / month) in pink
-t_str=$(fmt_pink "$cost_today")
-w_str=$(fmt_pink "$cost_week")
-m_str=$(fmt_pink "$cost_month")
-line2+=("$(printf "${DIM}today${RST} ${PINK}%s${RST} ${DIM}wk${RST} ${PINK}%s${RST} ${DIM}mo${RST} ${PINK}%s${RST}" "$t_str" "$w_str" "$m_str")")
-
-# Duration (only visible at 60+ min, color-coded by severity)
-if [ "$total_duration" -gt 0 ]; then
-  total_min=$(( total_duration / 60000 ))
-  # Format as Xh Ym when >= 60 min, otherwise just Xm
-  if [ "$total_min" -ge 60 ]; then
-    dur_h=$(( total_min / 60 ))
-    dur_m=$(( total_min % 60 ))
-    dur_str="${dur_h}h${dur_m}m"
-  else
-    dur_str="${total_min}m"
-  fi
-  if [ "$total_min" -ge 180 ]; then
-    line2+=("$(printf "${RED}⚠  %s${RST}" "$dur_str")")
-  elif [ "$total_min" -ge 120 ]; then
-    line2+=("$(printf "${RED} %s${RST}" "$dur_str")")
-  elif [ "$total_min" -ge 60 ]; then
-    line2+=("$(printf "${YELLOW} %s${RST}" "$dur_str")")
-  fi
-fi
-
 # ── Render ──────────────────────────────────────────────────────────────────
 sep1="$(printf " ${DIM}│${RST} ")"
-sep2="$(printf " ${DIM}┊${RST} ")"
 
 join_segments() {
   local sep="$1"; shift
@@ -207,4 +157,3 @@ join_segments() {
 }
 
 printf '%b\n' "$(join_segments "$sep1" "${line1[@]}")"
-printf '%b\n' "$(join_segments "$sep2" "${line2[@]}")"
